@@ -2,6 +2,7 @@ import express from "express";
 
 import adminRouter from "./admin.routes.js";
 import departmentRouter from "./department.routes.js"
+import employeeRouter from "./employee.routes.js"
 
 const router = express.Router();
 
@@ -16,5 +17,11 @@ router.use("/admin", adminRouter);
 // ---------------------------------------------
 
 router.use("/department", departmentRouter);
+
+// ---------------------------------------------
+// Employee Routes
+// ---------------------------------------------
+
+router.use("/employee", employeeRouter);
 
 export default router;

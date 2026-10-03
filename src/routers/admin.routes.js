@@ -67,6 +67,7 @@ router.put(
 
 router.post(
     "/logout",
+    authMiddleware,
     logoutAdminController
 );
 

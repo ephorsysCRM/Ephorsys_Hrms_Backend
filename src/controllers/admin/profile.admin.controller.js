@@ -1,26 +1,22 @@
 import asyncHandler from "express-async-handler";
 
-import getAdminProfileService from "../../services/admin/profile.admin.service.js";
+import getAdminProfileService from "../../services/admin/profile.admin.service.js"
+
+// =====================================================
+// GET AUTHENTICATED USER PROFILE
+// =====================================================
 
 const getAdminProfileController = asyncHandler(async (req, res) => {
-
-    console.log("PROFILE req.admin:", req.admin);
-
-    if (!req.admin) {
-        return res.status(401).json({
-            success: false,
-            message: "Authentication required",
-        });
-    }
-
-    const adminId = req.admin._id;
-
-    const admin = await getAdminProfileService(adminId);
+    const result = await getAdminProfileService(
+        req.user._id,
+        req.userType
+    );
 
     return res.status(200).json({
         success: true,
-        message: "Admin profile fetched successfully",
-        data: admin,
+        statusCode: 200,
+        message: "Profile fetched successfully",
+        data: result,
     });
 });
 

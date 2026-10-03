@@ -1,45 +1,91 @@
 import crypto from "crypto";
 
 import Admin from "../../model/admin.model.js";
+import Employee from "../../model/employee.model.js";
 import ApiError from "../../utils/ApiError.js";
 
+// =====================================================
+// VERIFY OTP — ADMIN / EMPLOYEE
+// =====================================================
+
 const verifyOtpService = async (email, otp) => {
-    const admin = await Admin.findOne({
-        email: email.toLowerCase(),
+    // 1. Validate input
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (!normalizedEmail || !otp) {
+        throw new ApiError(400, "Email and OTP are required");
+    }
+
+    // 2. Find account
+    let account = await Admin.findOne({
+        email: normalizedEmail,
     }).select(
         "+resetPasswordOtp +resetPasswordOtpExpires +resetPasswordVerified"
     );
 
-    if (!admin) {
-        throw new ApiError(404, "Admin not found");
+    let userType = "admin";
+
+    if (!account) {
+        account = await Employee.findOne({
+            officialEmail: normalizedEmail,
+        }).select(
+            "+resetPasswordOtp +resetPasswordOtpExpires +resetPasswordVerified"
+        );
+
+        userType = "employee";
     }
 
-    if (!admin.resetPasswordOtp) {
-        throw new ApiError(400, "OTP not found. Please request a new OTP");
+    if (!account) {
+        throw new ApiError(404, "Account not found");
     }
 
+    // 3. Check OTP exists
+    if (!account.resetPasswordOtp) {
+        throw new ApiError(
+            400,
+            "OTP not found. Please request a new OTP"
+        );
+    }
+
+    // 4. Check OTP expiry
     if (
-        !admin.resetPasswordOtpExpires ||
-        admin.resetPasswordOtpExpires < new Date()
+        !account.resetPasswordOtpExpires ||
+        account.resetPasswordOtpExpires < new Date()
     ) {
-        throw new ApiError(400, "OTP has expired. Please request a new OTP");
+        account.resetPasswordOtp = null;
+        account.resetPasswordOtpExpires = null;
+        account.resetPasswordVerified = false;
+
+        await account.save();
+
+        throw new ApiError(
+            400,
+            "OTP has expired. Please request a new OTP"
+        );
     }
 
+    // 5. Hash submitted OTP
     const hashedOtp = crypto
         .createHash("sha256")
-        .update(otp)
+        .update(String(otp).trim())
         .digest("hex");
 
-    if (hashedOtp !== admin.resetPasswordOtp) {
+    // 6. Compare OTP
+    if (hashedOtp !== account.resetPasswordOtp) {
         throw new ApiError(400, "Invalid OTP");
     }
 
-    admin.resetPasswordVerified = true;
+    // 7. Mark OTP verified
+    account.resetPasswordVerified = true;
 
-    await admin.save();
+    await account.save();
 
+    // 8. Return result
     return {
-        email: admin.email,
+        email: userType === "admin"
+            ? account.email
+            : account.officialEmail,
+        userType,
     };
 };
 

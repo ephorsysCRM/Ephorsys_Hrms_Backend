@@ -2,12 +2,13 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
 import Admin from "../model/admin.model.js";
+import Employee from "../model/employee.model.js";
 import ApiError from "../utils/ApiError.js";
 
 const authMiddleware = async (req, res, next) => {
     try {
         // =====================================================
-        // GET TOKEN FROM COOKIE
+        // 1. GET TOKEN FROM HTTP-ONLY COOKIE
         // =====================================================
 
         const token = req.cookies?.token;
@@ -20,7 +21,7 @@ const authMiddleware = async (req, res, next) => {
         }
 
         // =====================================================
-        // VERIFY TOKEN
+        // 2. VERIFY JWT TOKEN
         // =====================================================
 
         let decodedToken;
@@ -45,61 +46,101 @@ const authMiddleware = async (req, res, next) => {
         }
 
         // =====================================================
-        // VALIDATE ADMIN ID
+        // 3. VALIDATE USER ID
         // =====================================================
 
         if (
             !decodedToken.id ||
-            !mongoose.Types.ObjectId.isValid(
-                decodedToken.id
-            )
+            !mongoose.Types.ObjectId.isValid(decodedToken.id)
         ) {
             throw new ApiError(
                 401,
-                "Invalid admin authentication"
+                "Invalid authentication"
             );
         }
 
         // =====================================================
-        // FIND ADMIN
+        // 4. VALIDATE USER TYPE
         // =====================================================
 
-        const admin = await Admin.findById(
-            decodedToken.id
-        ).select(
-            "name email role phone profileImage isActive isBlocked"
-        );
+        const { userType } = decodedToken;
 
-        if (!admin) {
+        if (!["admin", "employee"].includes(userType)) {
             throw new ApiError(
                 401,
-                "Admin not found"
+                "Invalid user type in authentication token"
             );
         }
 
         // =====================================================
-        // ACCOUNT STATUS
+        // 5. LOAD ADMIN OR EMPLOYEE
         // =====================================================
 
-        if (!admin.isActive) {
-            throw new ApiError(
-                403,
-                "Admin account is inactive"
+        if (userType === "admin") {
+            const admin = await Admin.findById(
+                decodedToken.id
+            ).select(
+                "name email role phone profileImage isActive isBlocked"
             );
+
+            if (!admin) {
+                throw new ApiError(
+                    401,
+                    "Admin not found"
+                );
+            }
+
+            // Check account status
+            if (!admin.isActive) {
+                throw new ApiError(
+                    403,
+                    "Admin account is inactive"
+                );
+            }
+
+            if (admin.isBlocked) {
+                throw new ApiError(
+                    403,
+                    "Admin account is blocked"
+                );
+            }
+
+            // Attach authenticated user to request
+            req.admin = admin;
+            req.user = admin;
+            req.userType = "admin";
+
+        } else {
+            const employee = await Employee.findById(
+                decodedToken.id
+            ).select(
+                "-password -bankAccountNumber -bankIFSC"
+            );
+
+            if (!employee) {
+                throw new ApiError(
+                    401,
+                    "Employee not found"
+                );
+            }
+
+            // Check employment status
+            if (employee.employmentStatus !== "active") {
+                throw new ApiError(
+                    403,
+                    "Employee account is inactive"
+                );
+            }
+
+            // Attach authenticated user to request
+            req.employee = employee;
+            req.user = employee;
+            req.userType = "employee";
         }
 
-        if (admin.isBlocked) {
-            throw new ApiError(
-                403,
-                "Admin account is blocked"
-            );
-        }
-
         // =====================================================
-        // SET ADMIN
+        // 6. CONTINUE
         // =====================================================
-
-        req.admin = admin;
 
         next();
 

@@ -1,32 +1,83 @@
 import crypto from "crypto";
 
 import Admin from "../../model/admin.model.js";
+import Employee from "../../model/employee.model.js";
 import ApiError from "../../utils/ApiError.js";
 import sendEmail from "../../utils/sendEmail.js";
 
+// =====================================================
+// FORGOT PASSWORD SERVICE
+// Supports Admin, HR, Manager and Employee
+// =====================================================
+
 const forgotPasswordService = async (email) => {
-    const admin = await Admin.findOne({
-        email: email.toLowerCase(),
+    // =====================================================
+    // 1. VALIDATE EMAIL
+    // =====================================================
+
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+        throw new ApiError(400, "Email is required");
+    }
+
+    // =====================================================
+    // 2. FIND ADMIN ACCOUNT
+    // =====================================================
+
+    let account = await Admin.findOne({
+        email: normalizedEmail,
     }).select(
         "+resetPasswordOtp +resetPasswordOtpExpires +resetPasswordVerified"
     );
 
-    if (!admin) {
-        throw new ApiError(404, "Admin with this email does not exist");
+    let userType = "admin";
+
+    // =====================================================
+    // 3. IF NOT ADMIN, FIND EMPLOYEE ACCOUNT
+    // =====================================================
+
+    if (!account) {
+        account = await Employee.findOne({
+            officialEmail: normalizedEmail,
+        }).select(
+            "+resetPasswordOtp +resetPasswordOtpExpires +resetPasswordVerified"
+        );
+
+        userType = "employee";
     }
 
-    if (!admin.isActive) {
-        throw new ApiError(403, "Admin account is inactive");
+    // =====================================================
+    // 4. VALIDATE ACCOUNT
+    // =====================================================
+
+    if (!account) {
+        throw new ApiError(
+            404,
+            "No account found with this email address"
+        );
     }
 
-    if (admin.isBlocked) {
-        throw new ApiError(403, "Admin account is blocked");
+    if (userType === "admin") {
+        if (!account.isActive) {
+            throw new ApiError(403, "Admin account is inactive");
+        }
+
+        if (account.isBlocked) {
+            throw new ApiError(403, "Admin account is blocked");
+        }
+    } else {
+        if (account.employmentStatus !== "active") {
+            throw new ApiError(403, "Employee account is inactive");
+        }
     }
 
-    // Generate 6 digit OTP
+    // =====================================================
+    // 5. GENERATE 6-DIGIT OTP
+    // =====================================================
+
     const otp = crypto.randomInt(100000, 1000000).toString();
 
-    // Hash OTP before storing
     const hashedOtp = crypto
         .createHash("sha256")
         .update(otp)
@@ -40,46 +91,68 @@ const forgotPasswordService = async (email) => {
         Date.now() + expiresInMinutes * 60 * 1000
     );
 
-    admin.resetPasswordOtp = hashedOtp;
-    admin.resetPasswordOtpExpires = otpExpires;
-    admin.resetPasswordVerified = false;
+    // =====================================================
+    // 6. SAVE OTP
+    // =====================================================
 
-    await admin.save();
+    account.resetPasswordOtp = hashedOtp;
+    account.resetPasswordOtpExpires = otpExpires;
+    account.resetPasswordVerified = false;
+
+    await account.save();
+
+    // =====================================================
+    // 7. SEND OTP EMAIL
+    // =====================================================
+
+    const recipientEmail =
+        userType === "admin"
+            ? account.email
+            : account.officialEmail;
+
+    const recipientName =
+        userType === "admin"
+            ? account.name
+            : `${account.firstName || ""} ${account.lastName || ""}`.trim();
 
     await sendEmail({
-        to: admin.email,
+        to: recipientEmail,
         subject: "HRMS Password Reset OTP",
         html: `
-      <div style="font-family: Arial, sans-serif;">
-        <h2>HRMS Password Reset</h2>
+            <div style="font-family: Arial, sans-serif; color: #222;">
+                <h2>HRMS Password Reset</h2>
 
-        <p>Hello ${admin.name},</p>
+                <p>Hello ${recipientName || "User"},</p>
 
-        <p>
-          We received a request to reset your HRMS admin password.
-        </p>
+                <p>
+                    We received a request to reset your HRMS password.
+                </p>
 
-        <p>Your OTP is:</p>
+                <p>Your verification OTP is:</p>
 
-        <h1 style="letter-spacing: 8px;">
-          ${otp}
-        </h1>
+                <h1 style="letter-spacing: 8px;">${otp}</h1>
 
-        <p>
-          This OTP will expire in ${expiresInMinutes} minutes.
-        </p>
+                <p>
+                    This OTP will expire in ${expiresInMinutes} minutes.
+                </p>
 
-        <p>
-          If you did not request a password reset, please ignore this email.
-        </p>
+                <p>
+                    If you did not request a password reset,
+                    you can ignore this email.
+                </p>
 
-        <p>Regards,<br />HRMS Team</p>
-      </div>
-    `,
+                <p>Regards,<br />HRMS Team</p>
+            </div>
+        `,
     });
 
+    // =====================================================
+    // 8. RETURN RESPONSE
+    // =====================================================
+
     return {
-        email: admin.email,
+        email: recipientEmail,
+        userType,
     };
 };
 

@@ -1,34 +1,40 @@
-import jwt from "jsonwebtoken";
-import Admin from "../../model/admin.model.js";
+import asyncHandler from "express-async-handler";
 
-const logoutAdminService = async (refreshToken) => {
-    if (!refreshToken) {
-        return;
-    }
+// =====================================================
+// LOGOUT — ROLE-BASED MESSAGE
+// =====================================================
 
-    try {
-        const decodedToken = jwt.verify(
-            refreshToken,
-            process.env.REFRESH_TOKEN_SECRET
-        );
+const logoutAdminController = asyncHandler(async (req, res) => {
+    const role = req.user?.role || "user";
 
-        const admin = await Admin.findById(decodedToken.id).select(
-            "+refreshToken"
-        );
+    // Role-based logout messages
+    const logoutMessages = {
+        super_admin: "Super Admin logout successful",
+        admin: "Admin logout successful",
+        hr: "HR logout successful",
+        manager: "Manager logout successful",
+        employee: "Employee logout successful",
+    };
 
-        if (!admin) {
-            return;
-        }
+    const message =
+        logoutMessages[role] || "Logout successful";
 
-        admin.refreshToken = null;
-        admin.tokenVersion += 1;
+    // Clear HTTP-only authentication cookie
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite:
+            process.env.NODE_ENV === "production"
+                ? "strict"
+                : "lax",
+        path: "/",
+    });
 
-        await admin.save();
-    } catch (error) {
-        // Even if refresh token is expired/invalid,
-        // logout should still succeed and clear the cookie.
-        return;
-    }
-};
+    return res.status(200).json({
+        success: true,
+        statusCode: 200,
+        message,
+    });
+});
 
-export default logoutAdminService;
+export default logoutAdminController;

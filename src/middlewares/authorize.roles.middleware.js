@@ -3,10 +3,10 @@ import ApiError from "../utils/ApiError.js";
 const authorizeRoles = (...allowedRoles) => {
     return (req, res, next) => {
         // =====================================================
-        // CHECK AUTHENTICATION
+        // 1. CHECK AUTHENTICATION
         // =====================================================
 
-        if (!req.admin) {
+        if (!req.user) {
             return next(
                 new ApiError(
                     401,
@@ -16,10 +16,10 @@ const authorizeRoles = (...allowedRoles) => {
         }
 
         // =====================================================
-        // CHECK ROLE
+        // 2. CHECK USER ROLE
         // =====================================================
 
-        if (!allowedRoles.includes(req.admin.role)) {
+        if (!allowedRoles.includes(req.user.role)) {
             return next(
                 new ApiError(
                     403,
@@ -29,7 +29,7 @@ const authorizeRoles = (...allowedRoles) => {
         }
 
         // =====================================================
-        // ACCESS GRANTED
+        // 3. ACCESS GRANTED
         // =====================================================
 
         next();

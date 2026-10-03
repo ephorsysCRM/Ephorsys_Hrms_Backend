@@ -10,37 +10,126 @@ import cloudinary from "../config/cloudinary.js";
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
 
-    params: {
-        folder: "hrms/admin-profiles",
+    params: async (req, file) => {
 
-        allowed_formats: [
-            "jpg",
-            "jpeg",
-            "png",
-            "webp",
-        ],
+        // =================================================
+        // PROFILE PHOTO
+        // =================================================
 
-        transformation: [
-            {
-                width: 500,
-                height: 500,
-                crop: "fill",
-                gravity: "face",
-            },
-        ],
+        if (file.fieldname === "profilePhoto") {
+            return {
+                folder: "hrms/employees/profile-photos",
+
+                allowed_formats: [
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "webp",
+                ],
+
+                transformation: [
+                    {
+                        width: 500,
+                        height: 500,
+                        crop: "fill",
+                        gravity: "face",
+                    },
+                ],
+            };
+        }
+
+
+        // =================================================
+        // BANK DOCUMENT
+        // =================================================
+
+        if (file.fieldname === "bankDocument") {
+            return {
+                folder: "hrms/employees/bank-documents",
+
+                resource_type: "auto",
+
+                allowed_formats: [
+                    "pdf",
+                    "jpg",
+                    "jpeg",
+                    "png",
+                ],
+            };
+        }
+
+
+        // =================================================
+        // EDUCATION DOCUMENTS
+        // =================================================
+
+        if (
+            file.fieldname.startsWith(
+                "educationDocuments_"
+            )
+        ) {
+            return {
+                folder: "hrms/employees/education-documents",
+
+                resource_type: "auto",
+
+                allowed_formats: [
+                    "pdf",
+                ],
+            };
+        }
+
+
+        // =================================================
+        // GENERAL EMPLOYEE DOCUMENTS
+        // =================================================
+
+        if (
+            file.fieldname.startsWith(
+                "documents_"
+            )
+        ) {
+            return {
+                folder: "hrms/employees/documents",
+
+                resource_type: "auto",
+
+                allowed_formats: [
+                    "pdf",
+                ],
+            };
+        }
+
+
+        // =================================================
+        // DEFAULT
+        // =================================================
+
+        return {
+            folder: "hrms/employees",
+            resource_type: "auto",
+        };
     },
 });
+
 
 // =====================================================
 // MULTER
 // =====================================================
 
-const uploadToCloudinary = multer({
+const employeeUpload = multer({
+
     storage,
 
     limits: {
         fileSize: 5 * 1024 * 1024, // 5 MB
     },
+
 });
 
-export default uploadToCloudinary;
+
+// =====================================================
+// EXPORT
+// =====================================================
+
+export default employeeUpload;
