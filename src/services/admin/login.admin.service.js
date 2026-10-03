@@ -3,10 +3,7 @@ import bcrypt from "bcryptjs";
 import Admin from "../../model/admin.model.js";
 import ApiError from "../../utils/ApiError.js";
 
-import {
-    generateAccessToken,
-    generateRefreshToken,
-} from "../../utils/generateToken.js";
+import generateToken from "../../utils/generateToken.js";
 
 const loginAdminService = async (email, password) => {
     // ---------------------------------------------
@@ -15,7 +12,7 @@ const loginAdminService = async (email, password) => {
 
     const admin = await Admin.findOne({
         email: email.toLowerCase(),
-    }).select("+password +refreshToken");
+    }).select("+password");
 
     if (!admin) {
         throw new ApiError(401, "Invalid email or password");
@@ -47,18 +44,15 @@ const loginAdminService = async (email, password) => {
     }
 
     // ---------------------------------------------
-    // Generate Tokens
+    // Generate JWT
     // ---------------------------------------------
 
-    const accessToken = generateAccessToken(admin);
-
-    const refreshToken = generateRefreshToken(admin);
+    const token = generateToken(admin);
 
     // ---------------------------------------------
-    // Save Refresh Token
+    // Update Last Login
     // ---------------------------------------------
 
-    admin.refreshToken = refreshToken;
     admin.lastLogin = new Date();
 
     await admin.save();
@@ -70,13 +64,10 @@ const loginAdminService = async (email, password) => {
     const adminData = admin.toObject();
 
     delete adminData.password;
-    delete adminData.refreshToken;
-    delete adminData.tokenVersion;
 
     return {
         admin: adminData,
-        accessToken,
-        refreshToken,
+        token,
     };
 };
 

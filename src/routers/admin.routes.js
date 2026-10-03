@@ -2,7 +2,6 @@ import express from "express";
 
 import createAdminController from "../controllers/admin/create.admin.controller.js";
 import loginAdminController from "../controllers/admin/login.admin.controller.js";
-import refreshTokenController from "../controllers/admin/refresh.token.controller.js";
 import logoutAdminController from "../controllers/admin/logout.admin.controller.js";
 import forgotPasswordController from "../controllers/admin/forgot.password.controller.js";
 import verifyOtpController from "../controllers/admin/verify.otp.controller.js";
@@ -40,15 +39,6 @@ router.post(
     "/login",
     validate(loginAdminValidation),
     loginAdminController
-);
-
-// =====================================================
-// REFRESH TOKEN
-// =====================================================
-
-router.post(
-    "/refresh-token",
-    refreshTokenController
 );
 
 // =====================================================

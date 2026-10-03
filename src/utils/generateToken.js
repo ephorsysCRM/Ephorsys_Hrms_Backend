@@ -1,39 +1,17 @@
 import jwt from "jsonwebtoken";
 
-// =====================================================
-// GENERATE ACCESS TOKEN
-// =====================================================
-
-export const generateAccessToken = (admin) => {
+const generateToken = (admin) => {
     return jwt.sign(
         {
             id: admin._id.toString(),
             role: admin.role,
             email: admin.email,
-            tokenVersion: admin.tokenVersion,
         },
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.JWT_SECRET,
         {
-            expiresIn:
-                process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
+            expiresIn: process.env.JWT_EXPIRES_IN || "7d",
         }
     );
 };
 
-// =====================================================
-// GENERATE REFRESH TOKEN
-// =====================================================
-
-export const generateRefreshToken = (admin) => {
-    return jwt.sign(
-        {
-            id: admin._id.toString(),
-            tokenVersion: admin.tokenVersion,
-        },
-        process.env.REFRESH_TOKEN_SECRET,
-        {
-            expiresIn:
-                process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
-        }
-    );
-};
+export default generateToken;

@@ -1,14 +1,15 @@
 import asyncHandler from "express-async-handler";
-import logoutAdminService from "../../services/admin/logout.admin.service.js";
 
 const logoutAdminController = asyncHandler(async (req, res) => {
-    const refreshToken = req.cookies?.refreshToken;
+    // ---------------------------------------------
+    // Clear Authentication Cookie
+    // ---------------------------------------------
 
-    await logoutAdminService(refreshToken);
-
-    res.clearCookie("refreshToken", {
+    res.clearCookie("token", {
         httpOnly: true,
+
         secure: process.env.NODE_ENV === "production",
+
         sameSite:
             process.env.NODE_ENV === "production"
                 ? "strict"

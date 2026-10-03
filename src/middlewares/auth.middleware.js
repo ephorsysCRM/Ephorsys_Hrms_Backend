@@ -6,30 +6,13 @@ import ApiError from "../utils/ApiError.js";
 
 const authMiddleware = async (req, res, next) => {
     try {
-
         // =====================================================
-        // GET AUTHORIZATION HEADER
-        // =====================================================
-
-        const authHeader = req.headers.authorization;
-
-        if (
-            !authHeader ||
-            !authHeader.startsWith("Bearer ")
-        ) {
-            throw new ApiError(
-                401,
-                "Authentication token is required"
-            );
-        }
-
-        // =====================================================
-        // GET TOKEN
+        // GET TOKEN FROM COOKIE
         // =====================================================
 
-        const accessToken = authHeader.split(" ")[1];
+        const token = req.cookies?.token;
 
-        if (!accessToken) {
+        if (!token) {
             throw new ApiError(
                 401,
                 "Authentication token is required"
@@ -44,21 +27,20 @@ const authMiddleware = async (req, res, next) => {
 
         try {
             decodedToken = jwt.verify(
-                accessToken,
-                process.env.ACCESS_TOKEN_SECRET
+                token,
+                process.env.JWT_SECRET
             );
         } catch (error) {
-
             if (error.name === "TokenExpiredError") {
                 throw new ApiError(
                     401,
-                    "Access token has expired"
+                    "Authentication token has expired"
                 );
             }
 
             throw new ApiError(
                 401,
-                "Invalid access token"
+                "Invalid authentication token"
             );
         }
 
@@ -85,7 +67,7 @@ const authMiddleware = async (req, res, next) => {
         const admin = await Admin.findById(
             decodedToken.id
         ).select(
-            "name email role phone profileImage isActive isBlocked tokenVersion"
+            "name email role phone profileImage isActive isBlocked"
         );
 
         if (!admin) {
@@ -110,20 +92,6 @@ const authMiddleware = async (req, res, next) => {
             throw new ApiError(
                 403,
                 "Admin account is blocked"
-            );
-        }
-
-        // =====================================================
-        // TOKEN VERSION
-        // =====================================================
-
-        if (
-            decodedToken.tokenVersion !==
-            admin.tokenVersion
-        ) {
-            throw new ApiError(
-                401,
-                "Access token is no longer valid. Please login again"
             );
         }
 
