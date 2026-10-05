@@ -5,14 +5,34 @@ import ApiError from "../../utils/ApiError.js";
 
 const createDepartmentController = asyncHandler(
     async (req, res) => {
+
         // =====================================================
-        // CHECK AUTHENTICATED ADMIN
+        // CHECK AUTHENTICATION
         // =====================================================
 
-        if (!req.admin?._id) {
+        if (!req.user?._id) {
             throw new ApiError(
                 401,
                 "Authentication required"
+            );
+        }
+
+        // =====================================================
+        // OPTIONAL ROLE CHECK
+        // =====================================================
+        // Only Admin and HR can create departments.
+        // Normal employees cannot create departments.
+
+        const allowedRoles = [
+            "super_admin",
+            "admin",
+            "hr",
+        ];
+
+        if (!allowedRoles.includes(req.user.role)) {
+            throw new ApiError(
+                403,
+                "You are not authorized to create a department"
             );
         }
 
@@ -37,7 +57,9 @@ const createDepartmentController = asyncHandler(
                 code,
                 description,
                 status,
-                createdBy: req.admin._id,
+
+                // Authenticated Admin or Employee/HR
+                createdBy: req.user._id,
             });
 
         // =====================================================
