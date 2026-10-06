@@ -1,6 +1,9 @@
 import express from "express";
 
 import createEmployeeController from "../controllers/employee/createEmployee.controller.js";
+import getAllEmployeeController from "../controllers/employee/getAllEmployee.controller.js";
+import getEmployeeByIdController from "../controllers/employee/getEmployeeById.controller.js";
+
 import employeeUpload from "../middlewares/upload.middleware.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 import authorizeRoles from "../middlewares/authorize.roles.middleware.js";
@@ -14,21 +17,53 @@ const router = express.Router();
 router.post(
     "/create",
 
-    // 1. Upload files to Cloudinary
     employeeUpload.any(),
 
-    // 2. Check authentication
     authMiddleware,
 
-    // 3. Check allowed roles
     authorizeRoles(
         "super_admin",
         "admin",
         "hr"
     ),
 
-    // 4. Create employee
     createEmployeeController
+);
+
+// =====================================================
+// GET ALL EMPLOYEES
+// =====================================================
+
+router.get(
+    "/all",
+
+    authMiddleware,
+
+    authorizeRoles(
+        "super_admin",
+        "admin",
+        "hr"
+    ),
+
+    getAllEmployeeController
+);
+
+// =====================================================
+// GET SINGLE EMPLOYEE
+// =====================================================
+
+router.get(
+    "/:id",
+
+    authMiddleware,
+
+    authorizeRoles(
+        "super_admin",
+        "admin",
+        "hr"
+    ),
+
+    getEmployeeByIdController
 );
 
 export default router;
