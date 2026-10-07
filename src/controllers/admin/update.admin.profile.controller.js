@@ -6,7 +6,7 @@ const updateAdminProfileController = asyncHandler(
     async (req, res) => {
 
         // =========================================
-        // GET ADMIN ID FROM URL
+        // GET USER ID FROM URL
         // =========================================
 
         const { adminId } = req.params;
@@ -38,7 +38,7 @@ const updateAdminProfileController = asyncHandler(
         // CALL SERVICE
         // =========================================
 
-        const updatedAdmin =
+        const updatedUser =
             await updateAdminProfileService(
                 adminId,
                 updateData
@@ -50,9 +50,10 @@ const updateAdminProfileController = asyncHandler(
 
         return res.status(200).json({
             success: true,
+            statusCode: 200,
             message:
-                "Admin profile updated successfully",
-            data: updatedAdmin,
+                "Profile updated successfully",
+            data: updatedUser,
         });
     }
 );
