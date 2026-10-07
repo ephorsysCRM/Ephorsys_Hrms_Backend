@@ -1,11 +1,8 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-
 
 import ApiError from "../../utils/ApiError.js";
 import Employee from "../../model/employee.model.js";
 import Department from "../../model/department.model.js";
-
 
 const updateEmployeeService = async (
     employeeId,
@@ -13,9 +10,9 @@ const updateEmployeeService = async (
     files = []
 ) => {
 
-    // ==========================================
+    // =====================================================
     // VALIDATE EMPLOYEE ID
-    // ==========================================
+    // =====================================================
 
     if (!mongoose.Types.ObjectId.isValid(employeeId)) {
         throw new ApiError(
@@ -24,14 +21,11 @@ const updateEmployeeService = async (
         );
     }
 
-
-    // ==========================================
+    // =====================================================
     // FIND EMPLOYEE
-    // ==========================================
+    // =====================================================
 
-    const employee = await Employee.findById(
-        employeeId
-    );
+    const employee = await Employee.findById(employeeId);
 
     if (!employee) {
         throw new ApiError(
@@ -40,14 +34,11 @@ const updateEmployeeService = async (
         );
     }
 
-
-    // ==========================================
-    // PARSE JSON FIELDS
-    // ==========================================
+    // =====================================================
+    // PARSE EDUCATION LIST
+    // =====================================================
 
     let educationList = employeeData.educationList;
-    let experienceList = employeeData.experienceList;
-
 
     if (typeof educationList === "string") {
         try {
@@ -62,6 +53,11 @@ const updateEmployeeService = async (
         }
     }
 
+    // =====================================================
+    // PARSE EXPERIENCE LIST
+    // =====================================================
+
+    let experienceList = employeeData.experienceList;
 
     if (typeof experienceList === "string") {
         try {
@@ -76,21 +72,23 @@ const updateEmployeeService = async (
         }
     }
 
-
-    // ==========================================
+    // =====================================================
     // OFFICIAL EMAIL DUPLICATE CHECK
-    // ==========================================
+    // =====================================================
+
+    const officialEmail =
+        employeeData.officialEmail
+            ?.trim()
+            .toLowerCase();
 
     if (
-        employeeData.officialEmail &&
-        employeeData.officialEmail !==
-        employee.officialEmail
+        officialEmail &&
+        officialEmail !== employee.officialEmail
     ) {
 
         const existingEmployee =
             await Employee.findOne({
-                officialEmail:
-                    employeeData.officialEmail,
+                officialEmail,
                 _id: {
                     $ne: employeeId,
                 },
@@ -104,15 +102,13 @@ const updateEmployeeService = async (
         }
     }
 
-
-    // ==========================================
+    // =====================================================
     // EMPLOYEE ID DUPLICATE CHECK
-    // ==========================================
+    // =====================================================
 
     if (
         employeeData.employeeId &&
-        employeeData.employeeId !==
-        employee.employeeId
+        employeeData.employeeId !== employee.employeeId
     ) {
 
         const existingEmployee =
@@ -132,10 +128,9 @@ const updateEmployeeService = async (
         }
     }
 
-
-    // ==========================================
+    // =====================================================
     // DEPARTMENT VALIDATION
-    // ==========================================
+    // =====================================================
 
     if (employeeData.department) {
 
@@ -150,7 +145,6 @@ const updateEmployeeService = async (
             );
         }
 
-
         const department =
             await Department.findById(
                 employeeData.department
@@ -164,17 +158,15 @@ const updateEmployeeService = async (
         }
     }
 
-
-    // ==========================================
-    // ALLOWED ROLES
-    // ==========================================
+    // =====================================================
+    // ROLE VALIDATION
+    // =====================================================
 
     const allowedRoles = [
         "employee",
         "hr",
         "manager",
     ];
-
 
     if (
         employeeData.role &&
@@ -188,23 +180,25 @@ const updateEmployeeService = async (
         );
     }
 
-
-    // ==========================================
+    // =====================================================
     // UPDATE BASIC FIELDS
-    // ==========================================
+    // =====================================================
 
     const allowedFields = [
+
+        // Employee
         "employeeId",
 
+        // Basic
         "firstName",
         "middleName",
         "lastName",
-
         "gender",
         "maritalStatus",
         "bloodGroup",
         "dateOfBirth",
 
+        // Contact
         "personalEmail",
         "officialEmail",
         "mobile",
@@ -220,6 +214,7 @@ const updateEmployeeService = async (
         "currentAddress",
         "permanentAddress",
 
+        // Employment
         "role",
         "department",
         "designation",
@@ -234,37 +229,24 @@ const updateEmployeeService = async (
         "workMode",
         "employmentStatus",
 
+        // Payroll
         "basicSalary",
         "hraPercentage",
-        "hraAmount",
-
         "conveyanceAllowance",
         "specialAllowance",
 
-        "grossSalary",
-
         "epfPercentage",
-        "epfAmount",
-
         "professionalTaxPercentage",
-        "professionalTaxAmount",
-
         "tds",
-        "totalDeductions",
-        "netSalary",
-
         "employerPfPercentage",
-        "employerPfAmount",
 
-        "ctc",
-
+        // Bank
         "bankName",
         "accountHolderName",
         "accountNumber",
         "ifscCode",
         "branch",
     ];
-
 
     allowedFields.forEach((field) => {
 
@@ -278,10 +260,200 @@ const updateEmployeeService = async (
 
     });
 
+    // =====================================================
+    // NORMALIZE EMAIL
+    // =====================================================
 
-    // ==========================================
+    if (officialEmail) {
+        employee.officialEmail =
+            officialEmail;
+    }
+
+    if (employeeData.personalEmail) {
+        employee.personalEmail =
+            employeeData.personalEmail
+                .trim()
+                .toLowerCase();
+    }
+
+    // =====================================================
+    // PAYROLL CALCULATION
+    // =====================================================
+
+    const basicSalary = Number(
+        employeeData.basicSalary ??
+        employee.basicSalary ??
+        0
+    );
+
+    const hraPercentage = Number(
+        employeeData.hraPercentage ??
+        employee.hraPercentage ??
+        0
+    );
+
+    const conveyanceAllowance = Number(
+        employeeData.conveyanceAllowance ??
+        employee.conveyanceAllowance ??
+        0
+    );
+
+    const specialAllowance = Number(
+        employeeData.specialAllowance ??
+        employee.specialAllowance ??
+        0
+    );
+
+    const epfPercentage = Number(
+        employeeData.epfPercentage ??
+        employee.epfPercentage ??
+        0
+    );
+
+    const professionalTaxPercentage =
+        Number(
+            employeeData.professionalTaxPercentage ??
+            employee.professionalTaxPercentage ??
+            0
+        );
+
+    const tds = Number(
+        employeeData.tds ??
+        employee.tds ??
+        0
+    );
+
+    const employerPfPercentage =
+        Number(
+            employeeData.employerPfPercentage ??
+            employee.employerPfPercentage ??
+            0
+        );
+
+    // =====================================================
+    // HRA
+    // =====================================================
+
+    const hraAmount =
+        (basicSalary * hraPercentage) / 100;
+
+    // =====================================================
+    // GROSS SALARY
+    // =====================================================
+
+    const grossSalary =
+        basicSalary +
+        hraAmount +
+        conveyanceAllowance +
+        specialAllowance;
+
+    // =====================================================
+    // EPF
+    // =====================================================
+
+    const epfAmount =
+        (basicSalary * epfPercentage) / 100;
+
+    // =====================================================
+    // PROFESSIONAL TAX
+    // =====================================================
+
+    const professionalTaxAmount =
+        (grossSalary *
+            professionalTaxPercentage) /
+        100;
+
+    // =====================================================
+    // TOTAL DEDUCTIONS
+    // =====================================================
+
+    const totalDeductions =
+        epfAmount +
+        professionalTaxAmount +
+        tds;
+
+    // =====================================================
+    // NET SALARY
+    // =====================================================
+
+    const netSalary = Math.max(
+        grossSalary -
+        totalDeductions,
+        0
+    );
+
+    // =====================================================
+    // EMPLOYER PF
+    // =====================================================
+
+    const employerPfAmount =
+        (basicSalary *
+            employerPfPercentage) /
+        100;
+
+    // =====================================================
+    // CTC
+    // =====================================================
+
+    const ctc =
+        grossSalary +
+        employerPfAmount;
+
+    // =====================================================
+    // SAVE PAYROLL
+    // =====================================================
+
+    employee.basicSalary =
+        basicSalary;
+
+    employee.hraPercentage =
+        hraPercentage;
+
+    employee.hraAmount =
+        hraAmount;
+
+    employee.conveyanceAllowance =
+        conveyanceAllowance;
+
+    employee.specialAllowance =
+        specialAllowance;
+
+    employee.grossSalary =
+        grossSalary;
+
+    employee.epfPercentage =
+        epfPercentage;
+
+    employee.epfAmount =
+        epfAmount;
+
+    employee.professionalTaxPercentage =
+        professionalTaxPercentage;
+
+    employee.professionalTaxAmount =
+        professionalTaxAmount;
+
+    employee.tds =
+        tds;
+
+    employee.totalDeductions =
+        totalDeductions;
+
+    employee.netSalary =
+        netSalary;
+
+    employee.employerPfPercentage =
+        employerPfPercentage;
+
+    employee.employerPfAmount =
+        employerPfAmount;
+
+    employee.ctc =
+        ctc;
+
+    // =====================================================
     // EDUCATION
-    // ==========================================
+    // =====================================================
 
     if (
         educationList !== undefined
@@ -290,10 +462,9 @@ const updateEmployeeService = async (
             educationList;
     }
 
-
-    // ==========================================
+    // =====================================================
     // EXPERIENCE
-    // ==========================================
+    // =====================================================
 
     if (
         experienceList !== undefined
@@ -302,57 +473,67 @@ const updateEmployeeService = async (
             experienceList;
     }
 
-
-    // ==========================================
+    // =====================================================
     // FILE UPLOADS
-    // ==========================================
+    //
+    // IMPORTANT:
+    // multer-storage-cloudinary already uploads
+    // files to Cloudinary.
+    //
+    // file.path = Cloudinary URL
+    // =====================================================
 
     if (Array.isArray(files)) {
 
         for (const file of files) {
 
-            if (!file) continue;
+            if (!file) {
+                continue;
+            }
 
-
-            // ----------------------------------
+            // =================================================
             // PROFILE PHOTO
-            // ----------------------------------
+            // =================================================
 
             if (
                 file.fieldname ===
                 "profilePhoto"
             ) {
 
-                // Replace this with your
-                // existing Cloudinary upload
-                // implementation.
+                if (!file.path) {
+                    throw new ApiError(
+                        400,
+                        "Profile photo upload failed"
+                    );
+                }
 
-                // employee.profilePhoto =
-                //     uploadedUrl;
+                employee.profilePhoto =
+                    file.path;
             }
 
-
-            // ----------------------------------
+            // =================================================
             // BANK DOCUMENT
-            // ----------------------------------
+            // =================================================
 
             if (
                 file.fieldname ===
                 "bankDocument"
             ) {
 
-                // Replace this with your
-                // existing Cloudinary upload
-                // implementation.
+                if (!file.path) {
+                    throw new ApiError(
+                        400,
+                        "Bank document upload failed"
+                    );
+                }
 
-                // employee.bankDocument =
-                //     uploadedUrl;
+                employee.bankDocument =
+                    file.path;
             }
 
-
-            // ----------------------------------
-            // EDUCATION DOCUMENTS
-            // ----------------------------------
+            // =================================================
+            // EDUCATION DOCUMENT
+            // =================================================
 
             if (
                 file.fieldname.startsWith(
@@ -360,14 +541,50 @@ const updateEmployeeService = async (
                 )
             ) {
 
-                // Handle education document
-                // upload here.
+                const indexString =
+                    file.fieldname.replace(
+                        "educationDocuments_",
+                        ""
+                    );
+
+                const index =
+                    Number(indexString);
+
+                if (
+                    Number.isNaN(index) ||
+                    !file.path
+                ) {
+                    continue;
+                }
+
+                if (
+                    !employee.educationList[index]
+                ) {
+                    continue;
+                }
+
+                if (
+                    !Array.isArray(
+                        employee.educationList[
+                            index
+                        ].documents
+                    )
+                ) {
+                    employee.educationList[
+                        index
+                    ].documents = [];
+                }
+
+                employee.educationList[
+                    index
+                ].documents.push(
+                    file.path
+                );
             }
 
-
-            // ----------------------------------
+            // =================================================
             // GENERAL DOCUMENTS
-            // ----------------------------------
+            // =================================================
 
             if (
                 file.fieldname.startsWith(
@@ -375,32 +592,48 @@ const updateEmployeeService = async (
                 )
             ) {
 
-                // Handle general documents
-                // upload here.
+                const documentType =
+                    file.fieldname.replace(
+                        "documents_",
+                        ""
+                    );
+
+                if (!file.path) {
+                    continue;
+                }
+
+                const currentDocuments =
+                    employee.documents?.get(
+                        documentType
+                    ) || [];
+
+                employee.documents.set(
+                    documentType,
+                    [
+                        ...currentDocuments,
+                        file.path,
+                    ]
+                );
             }
         }
     }
 
-
-    // ==========================================
+    // =====================================================
     // SAVE EMPLOYEE
-    // ==========================================
+    // =====================================================
 
     await employee.save();
 
-
-    // ==========================================
-    // REMOVE PASSWORD FROM RESPONSE
-    // ==========================================
+    // =====================================================
+    // FETCH UPDATED EMPLOYEE
+    // =====================================================
 
     const updatedEmployee =
-        await Employee.findById(
-            employee._id
-        ).select("-password");
-
+        await Employee
+            .findById(employee._id)
+            .select("-password");
 
     return updatedEmployee;
 };
-
 
 export default updateEmployeeService;
