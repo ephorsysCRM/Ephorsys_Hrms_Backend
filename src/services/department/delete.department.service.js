@@ -1,64 +1,50 @@
 import Department from "../../model/department.model.js";
+import Employee from "../../model/employee.model.js";
 import ApiError from "../../utils/ApiError.js";
 
-// Employee model banne ke baad uncomment karna
-// import Employee from "../../model/employee.model.js";
-
 const deleteDepartmentService = async (departmentId) => {
+    // =========================================
+    // 1. FIND DEPARTMENT
+    // =========================================
 
-    // =====================================================
-    // FIND DEPARTMENT
-    // =====================================================
-
-    const department = await Department.findById(
-        departmentId
-    );
+    const department = await Department.findById(departmentId);
 
     if (!department) {
-        throw new ApiError(
-            404,
-            "Department not found"
-        );
+        throw new ApiError(404, "Department not found");
     }
 
-    // =====================================================
-    // CHECK EMPLOYEES
-    // =====================================================
-    // Employee model banne ke baad uncomment karna
-    // =====================================================
+    // =========================================
+    // 2. CHECK ASSIGNED EMPLOYEES
+    // =========================================
 
-    /*
-    const employeeCount =
-        await Employee.countDocuments({
-            department: departmentId,
-        });
+    const employeeCount = await Employee.countDocuments({
+        department: departmentId,
+    });
 
-    // =====================================================
-    // PREVENT DELETE IF EMPLOYEES EXIST
-    // =====================================================
+    // =========================================
+    // 3. PREVENT DELETION IF EMPLOYEES EXIST
+    // =========================================
 
     if (employeeCount > 0) {
         throw new ApiError(
             400,
-            "Department cannot be deleted because employees are assigned to this department"
+            `Department cannot be deleted because ${employeeCount} employee(s) are assigned to this department.Please reassign them first.`
         );
     }
-    */
 
-    // =====================================================
-    // DELETE DEPARTMENT
-    // =====================================================
+    // =========================================
+    // 4. DELETE DEPARTMENT
+    // =========================================
 
-    await Department.findByIdAndDelete(
-        departmentId
-    );
+    await Department.findByIdAndDelete(departmentId);
 
-    // =====================================================
-    // RETURN
-    // =====================================================
+    // =========================================
+    // 5. RETURN RESPONSE DATA
+    // =========================================
 
     return {
         departmentId,
+        message: "Department deleted successfully",
     };
 };
 

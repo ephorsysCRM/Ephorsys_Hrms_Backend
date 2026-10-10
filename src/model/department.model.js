@@ -5,7 +5,6 @@ const departmentSchema = new mongoose.Schema(
         // =====================================================
         // DEPARTMENT NAME
         // =====================================================
-
         name: {
             type: String,
             required: [true, "Department name is required"],
@@ -15,7 +14,6 @@ const departmentSchema = new mongoose.Schema(
         // =====================================================
         // DEPARTMENT CODE
         // =====================================================
-
         code: {
             type: String,
             required: [true, "Department code is required"],
@@ -27,9 +25,7 @@ const departmentSchema = new mongoose.Schema(
         // =====================================================
         // DEPARTMENT HEAD
         // =====================================================
-        // Initially empty.
-        // Will be assigned when an employee is selected
-        // as the department head.
+        // Reference to the employee assigned as department head.
 
         departmentHead: {
             type: mongoose.Schema.Types.ObjectId,
@@ -40,7 +36,6 @@ const departmentSchema = new mongoose.Schema(
         // =====================================================
         // DESCRIPTION
         // =====================================================
-
         description: {
             type: String,
             trim: true,
@@ -50,7 +45,6 @@ const departmentSchema = new mongoose.Schema(
         // =====================================================
         // STATUS
         // =====================================================
-
         status: {
             type: String,
             enum: ["active", "inactive"],
@@ -60,8 +54,6 @@ const departmentSchema = new mongoose.Schema(
         // =====================================================
         // CREATED BY
         // =====================================================
-        // Admin/HR who created the department.
-
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Admin",

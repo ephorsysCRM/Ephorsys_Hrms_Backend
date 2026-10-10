@@ -8,6 +8,7 @@ import employeeUpload from "../middlewares/upload.middleware.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 import authorizeRoles from "../middlewares/authorize.roles.middleware.js";
 import updateEmployeeController from "../controllers/employee/updateEmployee.controller.js";
+import getEmployeesByDepartment from "../controllers/employee/getEmployeesByDepartment.controller.js";
 
 const router = express.Router();
 
@@ -83,4 +84,9 @@ router.put(
     updateEmployeeController
 );
 
+
+router.get(
+    "/department/:departmentId",
+    getEmployeesByDepartment
+);
 export default router;

@@ -1,10 +1,12 @@
 import Department from "../../model/department.model.js";
 
 const getAllDepartmentService = async (page, limit) => {
-
     // =====================================================
     // PAGINATION
     // =====================================================
+
+    page = Math.max(1, Number(page) || 1);
+    limit = Math.max(1, Number(limit) || 10);
 
     const skip = (page - 1) * limit;
 
@@ -15,15 +17,13 @@ const getAllDepartmentService = async (page, limit) => {
     const departments = await Department.find()
 
         // =================================================
-        // DEPARTMENT HEAD
-        // =================================================
-        // Employee model banne ke baad uncomment karna
+        // DEPARTMENT HEAD - POPULATE EMPLOYEE DETAILS
         // =================================================
 
-        // .populate(
-        //     "departmentHead",
-        //     "name email phone profileImage"
-        // )
+        .populate(
+            "departmentHead",
+            "employeeId firstName middleName lastName officialEmail role employmentStatus"
+        )
 
         // =================================================
         // CREATED BY
@@ -77,11 +77,9 @@ const getAllDepartmentService = async (page, limit) => {
             totalDepartments,
             totalPages,
 
-            hasNextPage:
-                page < totalPages,
+            hasNextPage: page < totalPages,
 
-            hasPreviousPage:
-                page > 1,
+            hasPreviousPage: page > 1,
         },
     };
 };

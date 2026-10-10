@@ -1,103 +1,69 @@
 import Department from "../../model/department.model.js";
+import Employee from "../../model/employee.model.js";
 import ApiError from "../../utils/ApiError.js";
+import mongoose from "mongoose";
 
-const updateDepartmentService = async (
-    departmentId,
-    updateData
-) => {
-
-    // =====================================================
-    // FIND DEPARTMENT
-    // =====================================================
-
-    const department = await Department.findById(
-        departmentId
-    );
+const updateDepartmentService = async (departmentId, updateData) => {
+    // Find department
+    const department = await Department.findById(departmentId);
 
     if (!department) {
-        throw new ApiError(
-            404,
-            "Department not found"
-        );
+        throw new ApiError(404, "Department not found");
     }
 
-    // =====================================================
-    // UPDATE NAME
-    // =====================================================
-
+    // Update department name
     if (updateData.name !== undefined) {
         department.name = updateData.name;
     }
 
-    // =====================================================
-    // UPDATE CODE
-    // =====================================================
-
+    // Update department code
     if (updateData.code !== undefined) {
-        department.code =
-            updateData.code.toUpperCase();
+        department.code = updateData.code.toUpperCase();
     }
 
-    // =====================================================
-    // UPDATE DESCRIPTION
-    // =====================================================
-
+    // Update description
     if (updateData.description !== undefined) {
-        department.description =
-            updateData.description;
+        department.description = updateData.description;
     }
 
-    // =====================================================
-    // UPDATE STATUS
-    // =====================================================
-
+    // Update status
     if (updateData.status !== undefined) {
-        department.status =
-            updateData.status;
+        department.status = updateData.status;
     }
 
-    // =====================================================
-    // DEPARTMENT HEAD
-    // =====================================================
-    // Employee model banne ke baad uncomment karna
-    // =====================================================
-
-    /*
+    // Update Department Head
     if (updateData.departmentHead !== undefined) {
-        department.departmentHead =
-            updateData.departmentHead;
+        const headId = updateData.departmentHead;
+
+        if (headId === null || headId === "") {
+            department.departmentHead = null;
+        } else {
+            // Validate employee ID
+            if (!mongoose.Types.ObjectId.isValid(headId)) {
+                throw new ApiError(400, "Invalid Department Head ID");
+            }
+
+            // Check whether employee exists
+            const employee = await Employee.findById(headId);
+
+            if (!employee) {
+                throw new ApiError(404, "Selected employee not found");
+            }
+
+            department.departmentHead = employee._id;
+        }
     }
-    */
 
-    // =====================================================
-    // SAVE
-    // =====================================================
-
+    // Save changes
     await department.save();
 
-    // =====================================================
-    // GET UPDATED DEPARTMENT
-    // =====================================================
-
-    const updatedDepartment =
-        await Department.findById(
-            department._id
-        ).populate(
-            "createdBy",
-            "name email role"
+    // Return updated department with populated details
+    const updatedDepartment = await Department.findById(department._id)
+        .populate("createdBy", "name email role")
+        .populate(
+            "departmentHead",
+            "firstName middleName lastName employeeId officialEmail role employmentStatus"
         );
-
-    // Employee model banne ke baad:
-    /*
-    .populate(
-        "departmentHead",
-        "name email phone profileImage employeeId designation"
-    );
-    */
-
-    // =====================================================
-    // RETURN
-    // =====================================================
 
     return updatedDepartment;
 };
