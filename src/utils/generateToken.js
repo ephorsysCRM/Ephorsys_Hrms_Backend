@@ -1,31 +1,28 @@
 import jwt from "jsonwebtoken";
 
-export const generateAccessToken = (admin) => {
+const generateToken = (user) => {
+    if (!user) {
+        throw new Error("Cannot generate token: user is missing");
+    }
+
+    const userId = user._id || user.id;
+
+    if (!userId) {
+        throw new Error("Cannot generate token: user ID is missing");
+    }
+
     return jwt.sign(
         {
-            id: admin._id,
-            role: admin.role,
-            email: admin.email,
-            tokenVersion: admin.tokenVersion,
+            id: userId.toString(),
+            role: user.role,
+            email: user.email || user.officialEmail,
+            userType: user.userType,
         },
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.JWT_SECRET,
         {
-            expiresIn:
-                process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
+            expiresIn: process.env.JWT_EXPIRES_IN || "7d",
         }
     );
 };
 
-export const generateRefreshToken = (admin) => {
-    return jwt.sign(
-        {
-            id: admin._id,
-            tokenVersion: admin.tokenVersion,
-        },
-        process.env.REFRESH_TOKEN_SECRET,
-        {
-            expiresIn:
-                process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
-        }
-    );
-};
+export default generateToken;

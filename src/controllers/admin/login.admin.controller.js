@@ -5,27 +5,47 @@ import loginAdminService from "../../services/admin/login.admin.service.js";
 const loginAdminController = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    const { admin, accessToken, refreshToken } =
-        await loginAdminService(email, password);
+    // =====================================================
+    // 1. LOGIN ADMIN / HR / MANAGER / EMPLOYEE
+    // =====================================================
 
-    // ---------------------------------------------
-    // Set Refresh Token Cookie
-    // ---------------------------------------------
+    const { user, userType, token } = await loginAdminService(
+        email,
+        password
+    );
 
-    res.cookie("refreshToken", refreshToken, {
+    // =====================================================
+    // 2. SET HTTP-ONLY AUTHENTICATION COOKIE
+    // =====================================================
+
+    res.cookie("token", token, {
         httpOnly: true,
+
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+
+        sameSite:
+            process.env.NODE_ENV === "production"
+                ? "strict"
+                : "lax",
+
         maxAge: 7 * 24 * 60 * 60 * 1000,
+
+        path: "/",
     });
+
+    // =====================================================
+    // 3. SEND LOGIN RESPONSE
+    // =====================================================
 
     return res.status(200).json({
         success: true,
         statusCode: 200,
-        message: "Admin login successful",
+        message: "Login successful",
+
         data: {
-            admin,
-            accessToken,
+            user,
+            userType,
+            role: user.role,
         },
     });
 });
