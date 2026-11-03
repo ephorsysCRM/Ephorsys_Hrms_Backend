@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 import Attendance from "../../model/attendance.model.js";
 import OfficeLocation from "../../model/officeLocation.model.js";
@@ -6,10 +5,8 @@ import ApiError from "../../utils/ApiError.js";
 
 const TIME_ZONE = "Asia/Kolkata";
 
-const OFFICE_START_MINUTES = 10 * 60; // 10:00 AM
 const FIRST_HALF_END_MINUTES = 13 * 60 + 30; // 1:30 PM
 const SECOND_HALF_START_MINUTES = 14 * 60 + 30; // 2:30 PM
-const OFFICE_END_MINUTES = 19 * 60; // 7:00 PM
 
 // Maximum acceptable GPS accuracy in meters.
 // A lower value means a more precise location.
@@ -143,18 +140,11 @@ const checkInService = async (employeeId, payload = {}) => {
     const now = new Date();
     const currentMinutes = getIndiaMinutes(now);
 
-    // 7. Validate office check-in hours.
-    if (
-        currentMinutes < OFFICE_START_MINUTES ||
-        currentMinutes >= OFFICE_END_MINUTES
-    ) {
-        throw new ApiError(
-            400,
-            "Office check-in is allowed between 10:00 AM and 7:00 PM IST."
-        );
-    }
+    // 7. (Removed) Office check-in hours restriction.
+    //    Check-in is now allowed at any time of the day.
 
     // 8. Identify the applicable half before creating attendance.
+    //    Before 1:30 PM -> first half, from 2:30 PM onwards -> second half.
     let halfKey;
 
     if (currentMinutes < FIRST_HALF_END_MINUTES) {

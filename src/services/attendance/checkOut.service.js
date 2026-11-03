@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 import Attendance from "../../model/attendance.model.js";
@@ -8,10 +7,8 @@ import {
     calculateAttendanceStatus,
 } from "../../utils/attendanceStatus.js";
 
-const OFFICE_START_MINUTES = 600; // 10:00 AM
 const LUNCH_START_MINUTES = 810; // 1:30 PM
 const LUNCH_END_MINUTES = 870; // 2:30 PM
-const OFFICE_END_MINUTES = 1140; // 7:00 PM
 
 const FULL_DAY_MINUTES = 510;
 const TIME_ZONE = "Asia/Kolkata";
@@ -200,18 +197,8 @@ const checkOutService = async ({
         const now = new Date();
         const currentMinutes = getIndiaMinutes(now);
 
-        // 5. Validate office timings.
-        if (
-            currentMinutes < OFFICE_START_MINUTES ||
-            currentMinutes > OFFICE_END_MINUTES
-        ) {
-            return {
-                success: false,
-                statusCode: 400,
-                message:
-                    "Checkout is allowed between 10:00 AM and 7:00 PM IST.",
-            };
-        }
+        // 5. (Removed) Office timings restriction.
+        //    Checkout is now allowed at any time of the day.
 
         // 6. Prevent checkout during lunch.
         if (
