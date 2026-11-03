@@ -1,39 +1,35 @@
-import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: Number(process.env.SMTP_PORT) === 465,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-    },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
-});
-
 const sendEmail = async ({ to, subject, html }) => {
-    try {
-        const info = await transporter.sendMail({
-            from: `"HRMS" <${process.env.SMTP_USER}>`,
-            to,
+    const apiKey = process.env.BREVO_API_KEY;
+    const senderEmail = process.env.BREVO_SENDER_EMAIL;
+    const senderName = process.env.BREVO_SENDER_NAME || "HRMS";
+
+    if (!apiKey) throw new Error("BREVO_API_KEY is not set");
+    if (!senderEmail) throw new Error("BREVO_SENDER_EMAIL is not set");
+
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+            accept: "application/json",
+            "content-type": "application/json",
+            "api-key": apiKey,
+        },
+        body: JSON.stringify({
+            sender: { name: senderName, email: senderEmail },
+            to: [{ email: to }],
             subject,
-            html,
-        });
+            htmlContent: html,
+        }),
+    });
 
-        console.log("Email sent successfully:", info.messageId);
-        return info;
-    } catch (error) {
-        console.error("EMAIL ERROR:", {
-            message: error.message,
-            code: error.code,
-            command: error.command,
-            response: error.response,
-        });
+    const data = await response.json().catch(() => ({}));
 
-        throw error;
+    if (!response.ok) {
+        console.error("EMAIL ERROR:", response.status, data);
+        throw new Error(data.message || "Failed to send email");
     }
+
+    console.log("Email sent successfully:", data.messageId);
+    return data;
 };
 
 export default sendEmail;
