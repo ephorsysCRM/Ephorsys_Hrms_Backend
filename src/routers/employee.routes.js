@@ -16,10 +16,8 @@ const router = express.Router();
 // CREATE EMPLOYEE
 // =====================================================
 
-router.post(
-    "/create",
-
-    employeeUpload.any(),
+router.put(
+    "/:id",
 
     authMiddleware,
 
@@ -29,7 +27,9 @@ router.post(
         "hr"
     ),
 
-    createEmployeeController
+    employeeUpload.any(),
+
+    updateEmployeeController
 );
 
 // =====================================================
