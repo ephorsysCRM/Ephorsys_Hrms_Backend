@@ -1,8 +1,15 @@
+
 import getAllRegularizationService from "../../services/regularization/getAllRegularization.service.js";
 
 const getAllRegularizationController = async (req, res, next) => {
     try {
-        const result = await getAllRegularizationService(req.query);
+        // Get role from authenticated user, not from query parameters.
+        const userRole = req.user?.role?.toLowerCase();
+
+        const result = await getAllRegularizationService(
+            req.query,
+            userRole
+        );
 
         return res.status(200).json({
             success: true,
