@@ -1,5 +1,6 @@
 import Admin from "../../model/admin.model.js";
 import Employee from "../../model/employee.model.js";
+import EmployeeLeave from "../../model/employeeLeave.model.js";
 import ApiError from "../../utils/ApiError.js";
 
 // =====================================================
@@ -8,6 +9,7 @@ import ApiError from "../../utils/ApiError.js";
 // =====================================================
 
 const getAdminProfileService = async (userId, userType) => {
+
     // =====================================================
     // ADMIN PROFILE
     // =====================================================
@@ -49,8 +51,23 @@ const getAdminProfileService = async (userId, userType) => {
             throw new ApiError(403, "Employee account is inactive");
         }
 
+        // =====================================================
+        // FETCH EMPLOYEE LEAVE DETAILS
+        // =====================================================
+
+        const currentYear = new Date().getFullYear();
+
+        const leaveDetails = await EmployeeLeave.find({
+            employee: employee._id,
+        })
+            .select("-__v")
+            .sort({ year: -1 });
+
         return {
-            user: employee,
+            user: {
+                ...employee.toObject(),
+                leaveDetails,
+            },
             userType: "employee",
             role: employee.role,
         };

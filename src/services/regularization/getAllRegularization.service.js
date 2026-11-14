@@ -26,10 +26,10 @@ const getAllRegularizationService = async (query = {}, userRole) => {
         limit = "20",
     } = query;
 
-    // --------------------------------------------------
-    // VALIDATE DATES
-    // --------------------------------------------------
+    // Normalize logged-in user role
+    const role = String(userRole || "").trim().toLowerCase();
 
+    // Validate dates
     if (startDate && !isValidDate(startDate)) {
         throw new ApiError(400, "Invalid startDate. Use YYYY-MM-DD.");
     }
@@ -42,28 +42,19 @@ const getAllRegularizationService = async (query = {}, userRole) => {
         throw new ApiError(400, "startDate cannot be later than endDate.");
     }
 
-    // --------------------------------------------------
-    // VALIDATE STATUS
-    // --------------------------------------------------
-
+    // Validate status
     const allowedStatuses = ["pending", "approved", "rejected"];
 
     if (status && !allowedStatuses.includes(status)) {
         throw new ApiError(400, "Invalid regularization status.");
     }
 
-    // --------------------------------------------------
-    // VALIDATE EMPLOYEE ID
-    // --------------------------------------------------
-
+    // Validate employee ID
     if (employeeId && !mongoose.isValidObjectId(employeeId)) {
         throw new ApiError(400, "Invalid employeeId.");
     }
 
-    // --------------------------------------------------
-    // VALIDATE PAGINATION
-    // --------------------------------------------------
-
+    // Pagination
     const pageNumber = Math.max(1, Number.parseInt(page, 10) || 1);
 
     const pageSize = Math.min(
@@ -71,14 +62,15 @@ const getAllRegularizationService = async (query = {}, userRole) => {
         Math.max(1, Number.parseInt(limit, 10) || 20)
     );
 
-    // --------------------------------------------------
-    // BUILD FILTERS
-    // --------------------------------------------------
-
+    // Build common filters
     const filter = {};
 
     if (status) {
         filter.status = status;
+    }
+
+    if (employeeId) {
+        filter.employee = new mongoose.Types.ObjectId(employeeId);
     }
 
     if (startDate || endDate) {
@@ -97,49 +89,38 @@ const getAllRegularizationService = async (query = {}, userRole) => {
     // ROLE-BASED FILTERING
     // --------------------------------------------------
 
-    if (userRole === "hr") {
-        // Get the Employee model from the Regularization
-        // schema's employee reference.
-        const employeeRef = Regularization.schema.path("employee")?.options?.ref;
+    if (role === "hr") {
+        const employeeRef =
+            Regularization.schema.path("employee")?.options?.ref;
 
-        if (!employeeRef) {
+        if (!employeeRef || !mongoose.models[employeeRef]) {
             throw new ApiError(
                 500,
-                "Employee model reference is missing in Regularization schema."
+                "Employee model is not registered or reference is missing."
             );
         }
 
         const EmployeeModel = mongoose.model(employeeRef);
 
-        // Find all HR employee IDs.
+        // Find all HR employee IDs
         const hrEmployeeIds = await EmployeeModel.distinct("_id", {
             role: "hr",
         });
 
-        // Exclude HR-submitted requests.
+        // Exclude HR requests ONLY for HR users
         filter.employee = {
+            ...(filter.employee ? { $eq: filter.employee } : {}),
             $nin: hrEmployeeIds,
         };
-
-        // Apply employee-specific filter if supplied.
-        if (employeeId) {
-            filter.employee.$eq = new mongoose.Types.ObjectId(employeeId);
-        }
-    } else if (employeeId) {
-        // Admin can filter by any employee, including HR.
-        filter.employee = new mongoose.Types.ObjectId(employeeId);
     }
 
-    // --------------------------------------------------
-    // PAGINATION
-    // --------------------------------------------------
+    // ADMIN: No HR exclusion.
+    // Admin can see employee + HR regularization requests.
 
+    // Pagination
     const skip = (pageNumber - 1) * pageSize;
 
-    // --------------------------------------------------
-    // FETCH REQUESTS AND TOTAL COUNT
-    // --------------------------------------------------
-
+    // Fetch requests and count
     const [requests, totalRecords] = await Promise.all([
         Regularization.find(filter)
             .populate({
@@ -175,15 +156,7 @@ const getAllRegularizationService = async (query = {}, userRole) => {
         Regularization.countDocuments(filter),
     ]);
 
-    // --------------------------------------------------
-    // TOTAL PAGES
-    // --------------------------------------------------
-
     const totalPages = Math.ceil(totalRecords / pageSize);
-
-    // --------------------------------------------------
-    // RESPONSE
-    // --------------------------------------------------
 
     return {
         filters: {
@@ -191,6 +164,7 @@ const getAllRegularizationService = async (query = {}, userRole) => {
             endDate: endDate || null,
             status: status || null,
             employeeId: employeeId || null,
+            userRole: role,
         },
 
         pagination: {
