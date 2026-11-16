@@ -5,6 +5,8 @@ import updateEmployeeLeaveController from "../controllers/employeeLeave/updateEm
 
 import authMiddleware from "../middlewares/auth.middleware.js";
 import authorizeRoles from "../middlewares/authorize.roles.middleware.js";
+import applyLeaveController from "../controllers/employeeLeave/applyLeave.controller.js";
+import getMyLeaveApplicationsController from "../controllers/employeeLeave/getMyLeaveApplications.controller.js";
 
 const router = express.Router();
 
@@ -12,7 +14,7 @@ const router = express.Router();
 router.post(
     "/create/:employeeId",
     authMiddleware,
-    authorizeRoles("super_admin", "admin", "hr"),
+    authorizeRoles("admin", "hr"),
     createEmployeeLeaveController
 );
 
@@ -20,8 +22,25 @@ router.post(
 router.put(
     "/update/:employeeId/:year",
     authMiddleware,
-    authorizeRoles("super_admin", "admin", "hr"),
+    authorizeRoles("admin", "hr"),
     updateEmployeeLeaveController
+);
+
+
+// Apply Leave 
+router.post(
+    "/apply",
+    authMiddleware,
+    authorizeRoles("employee", "hr"),
+    applyLeaveController
+);
+
+// Get My leave Application List 
+router.get(
+    "/my-applications",
+    authMiddleware,
+    authorizeRoles("employee", "hr"),
+    getMyLeaveApplicationsController
 );
 
 export default router;

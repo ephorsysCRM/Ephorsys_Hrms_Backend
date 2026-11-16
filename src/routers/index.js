@@ -6,6 +6,7 @@ import employeeRouter from "./employee.routes.js"
 import attendanceRouter from "./attendance.routes.js"
 import regularizationRouter from "./regularization.routes.js"
 import employeeleaveRouter from "./employeeLeave.routes.js"
+import holidayRouter from "./holiday.routes.js"
 
 const router = express.Router();
 
@@ -43,5 +44,10 @@ router.use("/regularization", regularizationRouter);
 // ---------------------------------------------
 router.use("/employee-leave", employeeleaveRouter);
 
+
+// ---------------------------------------------
+// Holiday Routes
+// ---------------------------------------------
+router.use("/holiday", holidayRouter);
 
 export default router;
