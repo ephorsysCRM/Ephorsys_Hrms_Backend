@@ -7,6 +7,8 @@ import authMiddleware from "../middlewares/auth.middleware.js";
 import authorizeRoles from "../middlewares/authorize.roles.middleware.js";
 import applyLeaveController from "../controllers/employeeLeave/applyLeave.controller.js";
 import getMyLeaveApplicationsController from "../controllers/employeeLeave/getMyLeaveApplications.controller.js";
+import getAllLeaveApplicationsController from "../controllers/employeeLeave/getAllLeaveApplications.controller.js";
+import reviewLeaveApplicationController from "../controllers/employeeLeave/reviewLeaveApplication.controller.js";
 
 const router = express.Router();
 
@@ -43,4 +45,20 @@ router.get(
     getMyLeaveApplicationsController
 );
 
+
+// Get All Leave Applications (Admin + HR)
+router.get(
+    "/all-applications",
+    authMiddleware,
+    authorizeRoles("admin", "hr"),
+    getAllLeaveApplicationsController
+);
+
+// Approve or reject leave application
+router.patch(
+    "/:applicationId/review",
+    authMiddleware,
+    authorizeRoles("admin", "hr"),
+    reviewLeaveApplicationController
+);
 export default router;
