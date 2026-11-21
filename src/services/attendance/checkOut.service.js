@@ -10,7 +10,7 @@ import {
 const LUNCH_START_MINUTES = 810; // 1:30 PM
 const LUNCH_END_MINUTES = 870; // 2:30 PM
 
-const FULL_DAY_MINUTES = 510;
+const FULL_DAY_MINUTES = 360;
 const TIME_ZONE = "Asia/Kolkata";
 
 // Maximum permitted GPS accuracy in meters.
