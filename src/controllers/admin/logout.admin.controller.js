@@ -1,12 +1,10 @@
+
 import asyncHandler from "express-async-handler";
 
 const logoutAdminController = asyncHandler(async (req, res) => {
-    console.log("LOGOUT USER TYPE:", req.userType);
-    console.log("LOGOUT USER ROLE:", req.user?.role);
+    const role = req.user?.role || "user";
 
-    const role = String(req.user?.role || "").toLowerCase();
-
-    const messages = {
+    const logoutMessages = {
         super_admin: "Super Admin logout successful",
         admin: "Admin logout successful",
         hr: "HR logout successful",
@@ -14,13 +12,16 @@ const logoutAdminController = asyncHandler(async (req, res) => {
         employee: "Employee logout successful",
     };
 
-    const message = messages[role] || "Logout successful";
+    const message =
+        logoutMessages[role] || "Logout successful";
 
     res.clearCookie("token", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite:
-            process.env.NODE_ENV === "production" ? "strict" : "lax",
+            process.env.NODE_ENV === "production"
+                ? "none"
+                : "lax",
         path: "/",
     });
 
