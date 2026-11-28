@@ -19,7 +19,8 @@ const app = express();
 const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:4173",
-    "https://ephorsys-hrms-frontend-delta.vercel.app"
+    // "https://ephorsys-hrms-frontend-delta.vercel.app",
+    "https://hrms.ephorsys.com"
 ];
 
 app.use(
